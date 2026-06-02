@@ -16,7 +16,7 @@ def index():
 def search():
     city = request.args.get("city")
     mode = request.args.get("mode", "cope")
-    
+
     # Mock an API Gateway V2 Event for the Go backend
     event = {
         "version": "2.0",
@@ -40,16 +40,15 @@ def search():
             InvocationType="RequestResponse",
             Payload=json.dumps(event)
         )
-        
+
         payload = json.loads(response['Payload'].read().decode('utf-8'))
-        
+
         if payload.get("statusCode") != 200:
             err_msg = f"API returned {payload.get('statusCode')}: {payload.get('body')}"
             return jsonify({"error": err_msg}), payload.get("statusCode", 502)
         return jsonify(json.loads(payload["body"]))
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 
 
 @app.route("/health")
