@@ -111,13 +111,13 @@
 
         // Populate requested weather
         document.getElementById('req-city').textContent = data.requested.city;
-        document.getElementById('req-temp').textContent = Math.round(data.requested.temp_c);
+        document.getElementById('req-temp').textContent = Math.round(data.requested.temperature);
         document.getElementById('req-desc').textContent = data.requested.description;
         document.getElementById('req-humidity').textContent = `Humidity: ${data.requested.humidity}%`;
 
         // Populate alternative weather
         document.getElementById('alt-city').textContent = data.alternative.city;
-        document.getElementById('alt-temp').textContent = Math.round(data.alternative.temp_c);
+        document.getElementById('alt-temp').textContent = Math.round(data.alternative.temperature);
         document.getElementById('alt-desc').textContent = data.alternative.description;
         document.getElementById('alt-humidity').textContent = `Humidity: ${data.alternative.humidity}%`;
 
