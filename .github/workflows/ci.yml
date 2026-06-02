@@ -35,5 +35,20 @@ jobs:
       - name: Run tests with race detector
         run: go test -v -race ./...
 
-      - name: Build application
-        run: go build -v ./...
+      - name: Build and Zip for Lambda
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          GOOS=linux GOARCH=amd64 go build -tags lambda.norpc -o bootstrap main.go
+          zip payload.zip bootstrap
+
+      - name: Configure AWS Credentials
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Deploy to AWS Lambda
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: aws lambda update-function-code --function-name CopeAndHopeWeatherAPI --zip-file fileb://payload.zip
