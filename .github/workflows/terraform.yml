@@ -6,20 +6,66 @@ on:
     branches: [ main ]
     paths:
       - 'terraform/**'
+      - 'api/terraform/**'
+      - 'web/terraform/**'
       - '.github/workflows/terraform.yml'
   pull_request:
     branches: [ main ]
     paths:
       - 'terraform/**'
+      - 'api/terraform/**'
+      - 'web/terraform/**'
       - '.github/workflows/terraform.yml'
 
 jobs:
-  terraform:
+  shared:
+    name: Shared Infrastructure
     runs-on: ubuntu-latest
     environment: development
     steps:
       - uses: actions/checkout@v4
-      
+      - uses: hashicorp/setup-terraform@v3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Bootstrap state backend
+        run: |
+          aws s3api head-bucket --bucket cope-hope-terraform-state 2>/dev/null || \
+            aws s3 mb s3://cope-hope-terraform-state --region us-east-1
+          aws dynamodb describe-table --table-name terraform-locks 2>/dev/null || \
+            aws dynamodb create-table \
+              --table-name terraform-locks \
+              --attribute-definitions AttributeName=LockID,AttributeType=S \
+              --key-schema AttributeName=LockID,KeyType=HASH \
+              --billing-mode PROVISIONED \
+              --provisioned-throughput ReadCapacityUnits=1,WriteCapacityUnits=1 \
+              --region us-east-1
+
+      - name: Terraform Init
+        working-directory: ./terraform
+        run: terraform init
+
+      - name: Terraform Plan
+        working-directory: ./terraform
+        run: terraform plan
+
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        working-directory: ./terraform
+        run: terraform apply -auto-approve
+
+  api:
+    name: API Infrastructure
+    needs: shared
+    runs-on: ubuntu-latest
+    environment: development
+    steps:
+      - uses: actions/checkout@v4
       - uses: hashicorp/setup-terraform@v3
 
       - name: Configure AWS Credentials
@@ -30,14 +76,43 @@ jobs:
           aws-region: us-east-1
 
       - name: Terraform Init
-        working-directory: ./terraform
+        working-directory: ./api/terraform
         run: terraform init
 
       - name: Terraform Plan
-        working-directory: ./terraform
+        working-directory: ./api/terraform
         run: terraform plan -var="owm_api_key=${{ secrets.OWM_API_KEY }}"
 
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        working-directory: ./terraform
+        working-directory: ./api/terraform
         run: terraform apply -auto-approve -var="owm_api_key=${{ secrets.OWM_API_KEY }}"
+
+  web:
+    name: Web Infrastructure
+    needs: shared
+    runs-on: ubuntu-latest
+    environment: development
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Terraform Init
+        working-directory: ./web/terraform
+        run: terraform init
+
+      - name: Terraform Plan
+        working-directory: ./web/terraform
+        run: terraform plan
+
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        working-directory: ./web/terraform
+        run: terraform apply -auto-approve

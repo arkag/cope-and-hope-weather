@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Cope and Hope Weather - Find better weather anywhere in the world">
+  <title>Cope & Hope Weather</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="bg-glow"></div>
+
+  <main class="container">
+    <header class="hero">
+      <h1>Cope <span class="amp">&</span> Hope</h1>
+      <p class="subtitle">Is your weather miserable? We'll find somewhere better.</p>
+    </header>
+
+    <div class="search-card glass">
+      <form id="weather-form">
+        <div class="input-row">
+          <div class="input-group">
+            <label for="city-input">Your City</label>
+            <input type="text" id="city-input" name="city" placeholder="e.g. Seattle" required autocomplete="off">
+          </div>
+          <div class="mode-toggle">
+            <label>Mode</label>
+            <div class="toggle-group">
+              <input type="radio" id="mode-cope" name="mode" value="cope" checked>
+              <label for="mode-cope" class="toggle-btn">😩 Cope</label>
+              <input type="radio" id="mode-hope" name="mode" value="hope">
+              <label for="mode-hope" class="toggle-btn">🌤️ Hope</label>
+            </div>
+          </div>
+        </div>
+        <button type="submit" id="search-btn">
+          <span class="btn-text">Find Better Weather</span>
+          <span class="btn-loader" hidden></span>
+        </button>
+      </form>
+    </div>
+
+    <div id="results" class="results" hidden>
+      <div class="result-card glass" id="requested-card">
+        <div class="card-label">Your Weather</div>
+        <h2 id="req-city"></h2>
+        <div class="temp-display">
+          <span class="temp" id="req-temp"></span>
+          <span class="unit">°C</span>
+        </div>
+        <p class="description" id="req-desc"></p>
+        <p class="humidity" id="req-humidity"></p>
+      </div>
+
+      <div class="arrow-divider">
+        <span id="arrow-emoji"></span>
+      </div>
+
+      <div class="result-card glass highlight" id="alt-card">
+        <div class="card-label" id="alt-label"></div>
+        <h2 id="alt-city"></h2>
+        <div class="temp-display">
+          <span class="temp" id="alt-temp"></span>
+          <span class="unit">°C</span>
+        </div>
+        <p class="description" id="alt-desc"></p>
+        <p class="humidity" id="alt-humidity"></p>
+      </div>
+
+      <div class="message-card glass" id="message-card">
+        <p id="message-text"></p>
+      </div>
+    </div>
+
+    <div id="error" class="error-card glass" hidden>
+      <p id="error-text"></p>
+    </div>
+  </main>
+
+  <script>
+    const form = document.getElementById('weather-form');
+    const resultsDiv = document.getElementById('results');
+    const errorDiv = document.getElementById('error');
+    const searchBtn = document.getElementById('search-btn');
+    const btnText = searchBtn.querySelector('.btn-text');
+    const btnLoader = searchBtn.querySelector('.btn-loader');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const city = document.getElementById('city-input').value.trim();
+      const mode = document.querySelector('input[name="mode"]:checked').value;
+
+      if (!city) return;
+
+      // Loading state
+      btnText.textContent = 'Searching...';
+      btnLoader.hidden = false;
+      searchBtn.disabled = true;
+      resultsDiv.hidden = true;
+      errorDiv.hidden = true;
+
+      try {
+        const resp = await fetch(`/search?city=${encodeURIComponent(city)}&mode=${mode}`);
+        const data = await resp.json();
+
+        if (!resp.ok) {
+          throw new Error(data.error || 'Something went wrong');
+        }
+
+        // Populate requested weather
+        document.getElementById('req-city').textContent = data.requested.city;
+        document.getElementById('req-temp').textContent = Math.round(data.requested.temp_c);
+        document.getElementById('req-desc').textContent = data.requested.description;
+        document.getElementById('req-humidity').textContent = `Humidity: ${data.requested.humidity}%`;
+
+        // Populate alternative weather
+        document.getElementById('alt-city').textContent = data.alternative.city;
+        document.getElementById('alt-temp').textContent = Math.round(data.alternative.temp_c);
+        document.getElementById('alt-desc').textContent = data.alternative.description;
+        document.getElementById('alt-humidity').textContent = `Humidity: ${data.alternative.humidity}%`;
+
+        // Mode-specific styling
+        const altLabel = document.getElementById('alt-label');
+        const arrow = document.getElementById('arrow-emoji');
+        if (mode === 'cope') {
+          altLabel.textContent = 'At Least You\'re Not Here';
+          arrow.textContent = '😬';
+          document.getElementById('alt-card').classList.add('cope-highlight');
+          document.getElementById('alt-card').classList.remove('hope-highlight');
+        } else {
+          altLabel.textContent = 'Pack Your Bags';
+          arrow.textContent = '✈️';
+          document.getElementById('alt-card').classList.add('hope-highlight');
+          document.getElementById('alt-card').classList.remove('cope-highlight');
+        }
+
+        // Message
+        document.getElementById('message-text').textContent = data.message;
+
+        resultsDiv.hidden = false;
+        resultsDiv.classList.add('fade-in');
+      } catch (err) {
+        document.getElementById('error-text').textContent = err.message;
+        errorDiv.hidden = false;
+      } finally {
+        btnText.textContent = 'Find Better Weather';
+        btnLoader.hidden = true;
+        searchBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

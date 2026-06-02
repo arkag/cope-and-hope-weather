@@ -8,7 +8,7 @@ terraform {
 
   backend "s3" {
     bucket         = "cope-hope-terraform-state"
-    key            = "shared/terraform.tfstate"
+    key            = "web/terraform.tfstate"
     region         = "us-east-1"
     dynamodb_table = "terraform-locks"
     encrypt        = true

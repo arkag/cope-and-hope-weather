@@ -8,7 +8,7 @@ terraform {
 
   backend "s3" {
     bucket         = "cope-hope-terraform-state"
-    key            = "shared/terraform.tfstate"
+    key            = "api/terraform.tfstate"
     region         = "us-east-1"
     dynamodb_table = "terraform-locks"
     encrypt        = true
@@ -17,4 +17,10 @@ terraform {
 
 provider "aws" {
   region = "us-east-1"
+}
+
+variable "owm_api_key" {
+  description = "OpenWeatherMap API Key"
+  type        = string
+  sensitive   = true
 }
