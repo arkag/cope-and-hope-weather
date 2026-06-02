@@ -17,15 +17,10 @@ def search():
     city = request.args.get("city")
     mode = request.args.get("mode", "cope")
 
-    # Mock an API Gateway V2 Event for the Go backend
+    # Mock an API Gateway V1 Event for the Go backend
     event = {
-        "version": "2.0",
-        "rawPath": "/weather",
-        "requestContext": {
-            "http": {
-                "method": "GET"
-            }
-        },
+        "path": "/weather",
+        "httpMethod": "GET",
         "queryStringParameters": {
             "city": city,
             "mode": mode
