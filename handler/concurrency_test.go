@@ -17,7 +17,7 @@ func TestFetchAlternativesConcurrently(t *testing.T) {
 	// If made concurrently, it will take ~100ms.
 	slowServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(100 * time.Millisecond)
-		
+
 		city := r.URL.Query().Get("q")
 		if city == "FailCity" {
 			w.WriteHeader(http.StatusInternalServerError)
