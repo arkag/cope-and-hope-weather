@@ -14,7 +14,7 @@ func newTestServer(statusCode int, body any) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(statusCode)
-		json.NewEncoder(w).Encode(body)
+		_ = json.NewEncoder(w).Encode(body)
 	}))
 }
 
@@ -114,7 +114,7 @@ func TestFetchWeatherQueryParams(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		capturedQuery = r.URL.RawQuery
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(models.OWMWeatherResponse{
+		_ = json.NewEncoder(w).Encode(models.OWMWeatherResponse{
 			Name: "Denver",
 		})
 	}))
@@ -125,7 +125,7 @@ func TestFetchWeatherQueryParams(t *testing.T) {
 		BaseURL: server.URL,
 	}
 
-	c.FetchWeather("Denver")
+	_, _ = c.FetchWeather("Denver")
 
 	wantParams := "q=Denver&appid=my-secret-key&units=metric"
 	if capturedQuery != wantParams {
