@@ -34,6 +34,15 @@
               <label for="mode-hope" class="toggle-btn">🌤️ Hope</label>
             </div>
           </div>
+          <div class="unit-toggle">
+            <label>Units</label>
+            <div class="toggle-group">
+              <input type="radio" id="unit-c" name="unit" value="C" checked>
+              <label for="unit-c" class="toggle-btn">°C</label>
+              <input type="radio" id="unit-f" name="unit" value="F">
+              <label for="unit-f" class="toggle-btn">°F</label>
+            </div>
+          </div>
         </div>
         <button type="submit" id="search-btn">
           <span class="btn-text">Find Better Weather</span>
@@ -87,10 +96,72 @@
     const btnText = searchBtn.querySelector('.btn-text');
     const btnLoader = searchBtn.querySelector('.btn-loader');
 
+    let currentData = null;
+    let currentMode = 'cope';
+
+    document.querySelectorAll('input[name="unit"]').forEach(radio => {
+      radio.addEventListener('change', () => {
+        if (currentData) renderWeather();
+      });
+    });
+
+    function renderWeather() {
+      const unit = document.querySelector('input[name="unit"]:checked').value;
+      const isF = unit === 'F';
+      
+      const reqTempC = currentData.requested.temperature;
+      const altTempC = currentData.alternative.temperature;
+      
+      const reqTemp = isF ? (reqTempC * 9/5) + 32 : reqTempC;
+      const altTemp = isF ? (altTempC * 9/5) + 32 : altTempC;
+
+      // Populate requested weather
+      document.getElementById('req-city').textContent = currentData.requested.city;
+      document.getElementById('req-temp').textContent = Math.round(reqTemp);
+      document.getElementById('req-desc').textContent = currentData.requested.description;
+      document.getElementById('req-humidity').textContent = `Humidity: ${currentData.requested.humidity}%`;
+
+      // Populate alternative weather
+      document.getElementById('alt-city').textContent = currentData.alternative.city;
+      document.getElementById('alt-temp').textContent = Math.round(altTemp);
+      document.getElementById('alt-desc').textContent = currentData.alternative.description;
+      document.getElementById('alt-humidity').textContent = `Humidity: ${currentData.alternative.humidity}%`;
+
+      // Update unit labels
+      document.querySelectorAll('.unit').forEach(el => el.textContent = `°${unit}`);
+
+      // Mode-specific styling
+      const altLabel = document.getElementById('alt-label');
+      const arrow = document.getElementById('arrow-emoji');
+      if (currentMode === 'cope') {
+        altLabel.textContent = 'At Least You\'re Not Here';
+        arrow.textContent = '😬';
+        document.getElementById('alt-card').classList.add('cope-highlight');
+        document.getElementById('alt-card').classList.remove('hope-highlight');
+      } else {
+        altLabel.textContent = 'Pack Your Bags';
+        arrow.textContent = '✈️';
+        document.getElementById('alt-card').classList.add('hope-highlight');
+        document.getElementById('alt-card').classList.remove('cope-highlight');
+      }
+
+      // Format Message (Regex replace temperatures if Fahrenheit)
+      let message = currentData.message;
+      if (isF) {
+        message = message.replace(/(-?\d+\.?\d*)°C/g, (match, p1) => {
+          return ((parseFloat(p1) * 9/5) + 32).toFixed(1) + '°F';
+        });
+      }
+      document.getElementById('message-text').textContent = message;
+
+      resultsDiv.hidden = false;
+      resultsDiv.classList.add('fade-in');
+    }
+
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const city = document.getElementById('city-input').value.trim();
-      const mode = document.querySelector('input[name="mode"]:checked').value;
+      currentMode = document.querySelector('input[name="mode"]:checked').value;
 
       if (!city) return;
 
@@ -102,45 +173,16 @@
       errorDiv.hidden = true;
 
       try {
-        const resp = await fetch(`/search?city=${encodeURIComponent(city)}&mode=${mode}`);
+        const resp = await fetch(`/search?city=${encodeURIComponent(city)}&mode=${currentMode}`);
         const data = await resp.json();
 
         if (!resp.ok) {
           throw new Error(data.error || 'Something went wrong');
         }
 
-        // Populate requested weather
-        document.getElementById('req-city').textContent = data.requested.city;
-        document.getElementById('req-temp').textContent = Math.round(data.requested.temperature);
-        document.getElementById('req-desc').textContent = data.requested.description;
-        document.getElementById('req-humidity').textContent = `Humidity: ${data.requested.humidity}%`;
-
-        // Populate alternative weather
-        document.getElementById('alt-city').textContent = data.alternative.city;
-        document.getElementById('alt-temp').textContent = Math.round(data.alternative.temperature);
-        document.getElementById('alt-desc').textContent = data.alternative.description;
-        document.getElementById('alt-humidity').textContent = `Humidity: ${data.alternative.humidity}%`;
-
-        // Mode-specific styling
-        const altLabel = document.getElementById('alt-label');
-        const arrow = document.getElementById('arrow-emoji');
-        if (mode === 'cope') {
-          altLabel.textContent = 'At Least You\'re Not Here';
-          arrow.textContent = '😬';
-          document.getElementById('alt-card').classList.add('cope-highlight');
-          document.getElementById('alt-card').classList.remove('hope-highlight');
-        } else {
-          altLabel.textContent = 'Pack Your Bags';
-          arrow.textContent = '✈️';
-          document.getElementById('alt-card').classList.add('hope-highlight');
-          document.getElementById('alt-card').classList.remove('cope-highlight');
-        }
-
-        // Message
-        document.getElementById('message-text').textContent = data.message;
-
-        resultsDiv.hidden = false;
-        resultsDiv.classList.add('fade-in');
+        currentData = data;
+        renderWeather();
+        
       } catch (err) {
         document.getElementById('error-text').textContent = err.message;
         errorDiv.hidden = false;
