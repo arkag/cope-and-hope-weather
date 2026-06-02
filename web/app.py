@@ -44,8 +44,8 @@ def search():
         payload = json.loads(response['Payload'].read().decode('utf-8'))
         
         if payload.get("statusCode") != 200:
-            return jsonify({"error": f"API returned {payload.get('statusCode')}: {payload.get('body')}"}), payload.get("statusCode", 502)
-            
+            err_msg = f"API returned {payload.get('statusCode')}: {payload.get('body')}"
+            return jsonify({"error": err_msg}), payload.get("statusCode", 502)
         return jsonify(json.loads(payload["body"]))
     except Exception as e:
         return jsonify({"error": str(e)}), 500
