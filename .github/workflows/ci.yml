@@ -9,6 +9,7 @@ on:
 jobs:
   lint-and-test:
     runs-on: ubuntu-latest
+    environment: development
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
