@@ -6,18 +6,15 @@ from a2wsgi import WSGIMiddleware
 
 app = Flask(__name__)
 
-
 @app.route("/")
 def index():
     return render_template("index.html")
-
 
 @app.route("/search")
 def search():
     city = request.args.get("city")
     mode = request.args.get("mode", "cope")
 
-    # Mock an API Gateway V2 Event for the Go backend
     event = {
         "version": "2.0",
         "rawPath": "/weather",
@@ -50,13 +47,10 @@ def search():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
 @app.route("/health")
 def health():
     return jsonify({"status": "ok"})
 
-
-# Lambda entry point requires ASGI, but Flask is WSGI.
 asgi_app = WSGIMiddleware(app)
 handler = Mangum(asgi_app)
 
