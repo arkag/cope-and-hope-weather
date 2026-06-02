@@ -14,19 +14,19 @@ type APIResponse struct {
 	Message     string      `json:"message"`
 }
 
-type owmMain struct {
+type OWMMain struct {
 	Temp     float64 `json:"temp"`
 	Humidity int     `json:"humidity"`
 }
 
-type owmWeatherEntry struct {
+type OWMWeatherEntry struct {
 	Description string `json:"description"`
 }
 
 type OWMWeatherResponse struct {
 	Name    string            `json:"name"`
-	Main    owmMain           `json:"main"`
-	Weather []owmWeatherEntry `json:"weather"`
+	Main    OWMMain           `json:"main"`
+	Weather []OWMWeatherEntry `json:"weather"`
 }
 
 func (o OWMWeatherResponse) ToWeatherData() WeatherData {
