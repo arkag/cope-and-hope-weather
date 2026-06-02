@@ -31,7 +31,7 @@ func newFakeOWMServer() *httptest.Server {
 
 		resp, ok := responses[city]
 		if !ok {
-			// Because the logic engine now picks 3 random alternative cities, 
+			// Because the logic engine now picks 3 random alternative cities,
 			// we can't hardcode them all. We return a generic mock response for them.
 			if city == "FakeCity" {
 				w.WriteHeader(http.StatusNotFound)
