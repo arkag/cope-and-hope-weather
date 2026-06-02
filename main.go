@@ -8,6 +8,9 @@ import (
 	"github.com/arkag/cope-and-hope-weather/cache"
 	"github.com/arkag/cope-and-hope-weather/client"
 	"github.com/arkag/cope-and-hope-weather/handler"
+
+	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/awslabs/aws-lambda-go-api-proxy/httpadapter"
 )
 
 func main() {
@@ -38,9 +41,15 @@ func main() {
 
 	http.HandleFunc("/weather", s.HandleWeather)
 
-	slog.Info("starting server", "port", 8080)
-	if err := http.ListenAndServe(":8080", nil); err != nil {
-		slog.Error("server crashed", "error", err)
-		os.Exit(1)
+	if os.Getenv("AWS_LAMBDA_FUNCTION_NAME") != "" {
+		slog.Info("starting AWS Lambda handler")
+		adapter := httpadapter.New(http.DefaultServeMux)
+		lambda.Start(adapter.ProxyWithContext)
+	} else {
+		slog.Info("starting local server", "port", 8080)
+		if err := http.ListenAndServe(":8080", nil); err != nil {
+			slog.Error("server crashed", "error", err)
+			os.Exit(1)
+		}
 	}
 }
