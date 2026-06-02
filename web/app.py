@@ -2,6 +2,7 @@ import os
 import requests
 from flask import Flask, render_template, request, jsonify
 from mangum import Mangum
+from a2wsgi import WSGIMiddleware
 
 app = Flask(__name__)
 
@@ -38,8 +39,9 @@ def health():
     return jsonify({"status": "ok"})
 
 
-# Lambda entry point
-handler = Mangum(app)
+# Lambda entry point requires ASGI, but Flask is WSGI.
+asgi_app = WSGIMiddleware(app)
+handler = Mangum(asgi_app)
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
