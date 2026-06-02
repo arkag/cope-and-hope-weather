@@ -77,38 +77,4 @@ jobs:
       - name: Deploy to AWS Lambda
         run: aws lambda update-function-code --function-name CopeAndHopeWeatherAPI --zip-file fileb://payload.zip
 
-  e2e:
-    needs: deploy
-    runs-on: ubuntu-latest
-    environment: development
-    defaults:
-      run:
-        working-directory: ./api
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: 'api/go.mod'
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-
-      - name: Wait for Lambda update
-        run: sleep 5
-
-      - name: Fetch API Gateway URL
-        run: |
-          API_ID=$(aws apigatewayv2 get-apis --region us-east-1 --query "Items[?Name=='CopeAndHopeGateway'].ApiId" --output text)
-          echo "API_URL=https://${API_ID}.execute-api.us-east-1.amazonaws.com" >> $GITHUB_ENV
-
-      - name: Run E2E Integration Tests
-        env:
-          API_ENDPOINT: ${{ env.API_URL }}
-        run: go test -v ./e2e

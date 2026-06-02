@@ -1,5 +1,3 @@
-import os
-import requests
 import json
 import boto3
 from flask import Flask, render_template, request, jsonify
@@ -7,8 +5,6 @@ from mangum import Mangum
 from a2wsgi import WSGIMiddleware
 
 app = Flask(__name__)
-
-API_ENDPOINT = os.environ.get("API_ENDPOINT", "http://localhost:8080")
 
 
 @app.route("/")
