@@ -160,12 +160,12 @@ func TestAPIResponseMarshal(t *testing.T) {
 
 func TestOWMWeatherResponseUnmarshal(t *testing.T) {
 	tests := []struct {
-		name        string
-		jsonStr     string
-		wantCity    string
-		wantTemp    float64
-		wantHum     int
-		wantDesc    string
+		name     string
+		jsonStr  string
+		wantCity string
+		wantTemp float64
+		wantHum  int
+		wantDesc string
 	}{
 		{
 			name: "standard response",
