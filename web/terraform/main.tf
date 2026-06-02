@@ -33,6 +33,19 @@ resource "aws_iam_role_policy_attachment" "web_lambda_basic_execution" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
+data "aws_iam_policy_document" "invoke_api" {
+  statement {
+    actions   = ["lambda:InvokeFunction"]
+    resources = ["arn:aws:lambda:us-east-1:*:function:CopeAndHopeWeatherAPI"]
+  }
+}
+
+resource "aws_iam_role_policy" "invoke_api" {
+  name   = "invoke_api"
+  role   = aws_iam_role.web_lambda_exec.id
+  policy = data.aws_iam_policy_document.invoke_api.json
+}
+
 # --- Lambda Function ---
 data "archive_file" "dummy_web_lambda" {
   type        = "zip"

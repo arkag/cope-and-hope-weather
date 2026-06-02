@@ -1,5 +1,7 @@
 import os
 import requests
+import json
+import boto3
 from flask import Flask, render_template, request, jsonify
 from mangum import Mangum
 from a2wsgi import WSGIMiddleware
@@ -16,22 +18,42 @@ def index():
 
 @app.route("/search")
 def search():
-    city = request.args.get("city", "")
+    city = request.args.get("city")
     mode = request.args.get("mode", "cope")
-
-    if not city:
-        return jsonify({"error": "city is required"}), 400
+    
+    # Mock an API Gateway V2 Event for the Go backend
+    event = {
+        "version": "2.0",
+        "rawPath": "/weather",
+        "requestContext": {
+            "http": {
+                "method": "GET"
+            }
+        },
+        "queryStringParameters": {
+            "city": city,
+            "mode": mode
+        }
+    }
 
     try:
-        resp = requests.get(
-            f"{API_ENDPOINT}/weather",
-            params={"city": city, "mode": mode},
-            timeout=10,
+        # Call the Go API directly over AWS internal network
+        lambda_client = boto3.client('lambda', region_name='us-east-1')
+        response = lambda_client.invoke(
+            FunctionName="CopeAndHopeWeatherAPI",
+            InvocationType="RequestResponse",
+            Payload=json.dumps(event)
         )
-        resp.raise_for_status()
-        return jsonify(resp.json())
-    except requests.RequestException as e:
-        return jsonify({"error": str(e)}), 502
+        
+        payload = json.loads(response['Payload'].read().decode('utf-8'))
+        
+        if payload.get("statusCode") != 200:
+            return jsonify({"error": f"API returned {payload.get('statusCode')}: {payload.get('body')}"}), payload.get("statusCode", 502)
+            
+        return jsonify(json.loads(payload["body"]))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 
 @app.route("/health")
