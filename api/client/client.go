@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 
 	"github.com/arkag/cope-and-hope-weather/models"
 )
@@ -19,7 +20,8 @@ func (c Client) FetchWeather(city string) (models.WeatherData, error) {
 		return models.WeatherData{}, fmt.Errorf("city cannot be empty")
 	}
 
-	url := fmt.Sprintf("%s/data/2.5/weather?q=%s&appid=%s&units=metric", c.BaseURL, city, c.APIKey)
+	encodedCity := url.QueryEscape(city)
+	url := fmt.Sprintf("%s/data/2.5/weather?q=%s&appid=%s&units=metric", c.BaseURL, encodedCity, c.APIKey)
 
 	resp, err := http.Get(url)
 	if err != nil {
