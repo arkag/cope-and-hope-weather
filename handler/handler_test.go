@@ -31,8 +31,17 @@ func newFakeOWMServer() *httptest.Server {
 
 		resp, ok := responses[city]
 		if !ok {
-			w.WriteHeader(http.StatusNotFound)
-			return
+			// Because the logic engine now picks 3 random alternative cities, 
+			// we can't hardcode them all. We return a generic mock response for them.
+			if city == "FakeCity" {
+				w.WriteHeader(http.StatusNotFound)
+				return
+			}
+			resp = models.OWMWeatherResponse{
+				Name:    city,
+				Main:    models.OWMMain{Temp: 25.0, Humidity: 50},
+				Weather: []models.OWMWeatherEntry{{Description: "mock weather"}},
+			}
 		}
 
 		w.Header().Set("Content-Type", "application/json")
