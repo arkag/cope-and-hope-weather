@@ -1,33 +1,46 @@
 package main
 
 import (
-	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 
+	"github.com/arkag/cope-and-hope-weather/cache"
 	"github.com/arkag/cope-and-hope-weather/client"
 	"github.com/arkag/cope-and-hope-weather/handler"
 )
 
 func main() {
+	opts := &slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	}
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, opts))
+	slog.SetDefault(logger)
+
 	apiKey := os.Getenv("OWM_API_KEY")
 	if apiKey == "" {
-		fmt.Println("OWM_API_KEY environment variable is required")
+		slog.Error("missing environment variable", "env_var", "OWM_API_KEY")
 		os.Exit(1)
 	}
 
+	realClient := client.Client{
+		APIKey:  apiKey,
+		BaseURL: "https://api.openweathermap.org",
+	}
+
 	s := &handler.Server{
-		WeatherClient: client.Client{
-			APIKey:  apiKey,
-			BaseURL: "https://api.openweathermap.org",
+		WeatherClient: &cache.CachedClient{
+			RealFetcher: realClient,
+			TableName:   "WeatherCache",
+			Dynamo:      nil, // We will initialize the AWS client later in Phase 2
 		},
 	}
 
 	http.HandleFunc("/weather", s.HandleWeather)
 
-	fmt.Println("Cope and Hope Weather API listening on :8080")
+	slog.Info("starting server", "port", 8080)
 	if err := http.ListenAndServe(":8080", nil); err != nil {
-		fmt.Printf("Server error: %v\n", err)
+		slog.Error("server crashed", "error", err)
 		os.Exit(1)
 	}
 }

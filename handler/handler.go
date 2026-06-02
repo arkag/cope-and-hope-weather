@@ -2,15 +2,16 @@ package handler
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
 
-	"github.com/arkag/cope-and-hope-weather/client"
+	"github.com/arkag/cope-and-hope-weather/cache"
 	"github.com/arkag/cope-and-hope-weather/logic"
 	"github.com/arkag/cope-and-hope-weather/models"
 )
 
 type Server struct {
-	WeatherClient client.Client
+	WeatherClient cache.WeatherFetcher
 }
 
 func (s *Server) HandleWeather(w http.ResponseWriter, r *http.Request) {
@@ -40,6 +41,7 @@ func (s *Server) HandleWeather(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 2. Fetch all 3 simultaneously!
+	slog.Debug("starting concurrent fetch for alternative cities", "cities", altCities)
 	altResults := s.FetchAlternativesConcurrently(altCities)
 
 	if len(altResults) == 0 {
@@ -84,6 +86,12 @@ func (s *Server) HandleWeather(w http.ResponseWriter, r *http.Request) {
 		Mode:        mode,
 		Message:     msg,
 	}
+
+	slog.Info("weather processed",
+		"mode", mode,
+		"requested_city", weather.City,
+		"alternative_city", alternative.City,
+	)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
